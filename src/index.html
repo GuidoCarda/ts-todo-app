@@ -4,14 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <form>
-      <label for="new-todo">new todo</label>
-      <input type="text" id="new-todo" />
-      <button>add</button>
-    </form>
-    <ul class="todos"></ul>
+    <main>
+      <form>
+        <div>
+          <label for="todo-field">New Todo</label>
+          <input type="text" id="todo-field" />
+        </div>
+        <button id="todo-btn">Add</button>
+      </form>
+      <ul class="todos"></ul>
+    </main>
     <script src="../dist/index.js"></script>
   </body>
 </html>

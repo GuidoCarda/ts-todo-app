@@ -1,53 +1,133 @@
 const form: HTMLFormElement | null = document.querySelector("form");
 const input: HTMLInputElement | null = document.querySelector("input");
+const todoBtn: HTMLButtonElement | null = document.querySelector("#todo-btn");
 const todosList: HTMLUListElement | null = document.querySelector(".todos");
 
-type Todo = { id: number; title: string; done: boolean };
+type Todo = {
+  id: string;
+  title: string;
+  done: boolean;
+};
 
-const TODOS: Todo[] = [];
-let prevId = 0;
+let todos: Todo[] = getTodos();
+let editingTodoId: string | null = null;
 
 form?.addEventListener("submit", handleSubmit);
-renderTodos(TODOS);
 
-function handleSubmit(e: SubmitEvent): void {
+renderTodos();
+
+function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  const title = input?.value.trim();
+  const value = input?.value.trim();
 
-  if (!title) {
-    return alert("empty todo field");
+  if (!value) {
+    alert("empty field");
+    input?.focus();
+    return;
   }
 
-  const newTodo = {
-    id: prevId++,
-    title,
-    done: false,
-  };
+  if (editingTodoId !== null) {
+    todos = todos.map((todo) =>
+      todo.id === editingTodoId ? { ...todo, title: value } : todo
+    );
+    editingTodoId = null;
+    if (todoBtn) {
+      todoBtn.textContent = "add";
+    }
+  } else {
+    addTodo(value);
+  }
 
-  TODOS.push(newTodo);
+  setTodos(todos);
+  renderTodos();
   if (input) {
     input.value = "";
   }
-  renderTodos(TODOS);
 }
 
-function deleteTodo() {}
-
-function editTodo(id: number) {
-  console.log(`Edit todo ${id}`);
+function addTodo(title: string) {
+  const newTodo = {
+    id: getRandomId(),
+    title,
+    done: false,
+  };
+  todos = [...todos, newTodo];
 }
 
-function renderTodos(todos: Todo[]) {
-  if (todosList?.hasChildNodes()) {
-    todosList.innerHTML = "";
+function editTodo(id: string) {
+  if (editingTodoId) {
+    return alert("already editing a todo");
   }
-  todos.forEach(({ title, id }) => {
-    const li = document.createElement("li");
-    li.textContent = title;
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "edit todo";
-    editBtn.addEventListener("click", () => editTodo(id));
-    li.appendChild(editBtn);
-    todosList?.appendChild(li);
+
+  const todo = todos.find((todo) => todo.id === id);
+
+  if (todo && input) {
+    if (todoBtn) todoBtn.textContent = "save";
+    input.value = todo.title;
+    input?.focus();
+    editingTodoId = id;
+  } else {
+    alert("algo salio mal");
+  }
+}
+
+function deleteTodo(id: string) {
+  if (editingTodoId) return alert("you can delete todos while editing one");
+  todos = todos.filter((todo) => todo.id !== id);
+  renderTodos();
+}
+
+function renderTodos() {
+  if (todosList?.hasChildNodes()) todosList.innerHTML = "";
+
+  todos.forEach(({ id, title }) => {
+    const todoItem = document.createElement("li");
+    todoItem.classList.add("todo");
+    todoItem.textContent = title;
+    todosList?.appendChild(todoItem);
+
+    const actionsWrapper = document.createElement("div");
+
+    const deleteBtn = createButton("delete", () => deleteTodo(id));
+    const editBtn = createButton("edit", () => editTodo(id));
+
+    actionsWrapper.append(editBtn, deleteBtn);
+    actionsWrapper.classList.add("todo-actions");
+
+    todoItem.appendChild(actionsWrapper);
   });
+}
+
+type ButtonClickHandler = () => void;
+
+function createButton(label: string, onClick: ButtonClickHandler) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// function createButton<T extends (...args: any[]) => void>(
+//   label: string,
+//   onClick: T
+// ): HTMLButtonElement {
+//   const button = document.createElement("button");
+//   button.textContent = label;
+//   button.addEventListener("click", onClick);
+//   return button;
+// }
+
+function getRandomId(length: number = 10): string {
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
+}
+
+function getTodos(): Todo[] {
+  const todos = localStorage.getItem("todos");
+  return todos ? JSON.parse(todos) : [];
+}
+
+function setTodos(value: Todo[]) {
+  localStorage.setItem("todos", JSON.stringify(value));
 }
