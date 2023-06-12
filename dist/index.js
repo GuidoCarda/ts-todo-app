@@ -1,11 +1,15 @@
 "use strict";
 const form = document.querySelector("form");
 const input = document.querySelector("input");
+const inputLimitEl = document.querySelector(".input-limit");
 const todoBtn = document.querySelector("#todo-btn");
 const todosList = document.querySelector(".todos");
+const TODOS_LIMIT = 5;
 let todos = getTodos();
 let editingTodoId = null;
 form === null || form === void 0 ? void 0 : form.addEventListener("submit", handleSubmit);
+input === null || input === void 0 ? void 0 : input.addEventListener("keyup", handleInputKeyDown);
+document.title = `${todos.length} remaining`;
 renderTodos();
 function handleSubmit(e) {
     e.preventDefault();
@@ -15,6 +19,9 @@ function handleSubmit(e) {
         input === null || input === void 0 ? void 0 : input.focus();
         return;
     }
+    if (value.length > 40) {
+        return alert("The title is too long");
+    }
     if (editingTodoId !== null) {
         todos = todos.map((todo) => todo.id === editingTodoId ? Object.assign(Object.assign({}, todo), { title: value }) : todo);
         editingTodoId = null;
@@ -23,12 +30,28 @@ function handleSubmit(e) {
         }
     }
     else {
+        if (todos.length >= TODOS_LIMIT) {
+            alert("Todo's limit reached");
+            clearInput();
+            return;
+        }
         addTodo(value);
     }
     setTodos(todos);
     renderTodos();
-    if (input) {
-        input.value = "";
+    clearInput();
+}
+function handleInputKeyDown(e) {
+    var _a;
+    const titleLength = (_a = e.target) === null || _a === void 0 ? void 0 : _a.value.length;
+    if (inputLimitEl) {
+        inputLimitEl.textContent = `${titleLength}/40`;
+        if (titleLength > 40) {
+            inputLimitEl.classList.add("error");
+        }
+        else {
+            inputLimitEl.classList.remove("error");
+        }
     }
 }
 function addTodo(title) {
@@ -39,6 +62,14 @@ function addTodo(title) {
     };
     todos = [...todos, newTodo];
 }
+function clearInput() {
+    if (input) {
+        input.value = "";
+    }
+    if (inputLimitEl) {
+        inputLimitEl.textContent = `0/40`;
+    }
+}
 function editTodo(id) {
     if (editingTodoId) {
         return alert("already editing a todo");
@@ -48,6 +79,8 @@ function editTodo(id) {
         if (todoBtn)
             todoBtn.textContent = "save";
         input.value = todo.title;
+        if (inputLimitEl)
+            inputLimitEl.textContent = `${todo.title.length}/40`;
         input === null || input === void 0 ? void 0 : input.focus();
         editingTodoId = id;
     }
@@ -59,11 +92,13 @@ function deleteTodo(id) {
     if (editingTodoId)
         return alert("you can delete todos while editing one");
     todos = todos.filter((todo) => todo.id !== id);
+    setTodos(todos);
     renderTodos();
 }
 function renderTodos() {
     if (todosList === null || todosList === void 0 ? void 0 : todosList.hasChildNodes())
         todosList.innerHTML = "";
+    document.title = `${todos.length} remaining`;
     todos.forEach(({ id, title }) => {
         const todoItem = document.createElement("li");
         todoItem.classList.add("todo");

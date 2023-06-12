@@ -34,6 +34,7 @@ button {
 }
 
 form {
+  position: relative;
   display: flex;
   gap: 1rem;
   align-items: end;
@@ -72,4 +73,16 @@ form button {
   height: 2.5rem;
   padding-inline: 1rem;
   border: none;
+}
+
+.input-limit {
+  position: absolute;
+  bottom: -1.5rem;
+  left: 0;
+  font-size: 0.875rem;
+  color: gray;
+}
+
+.input-limit.error {
+  color: rgb(201, 58, 58);
 }
