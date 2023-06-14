@@ -1,6 +1,7 @@
 const form: HTMLFormElement | null = document.querySelector("form");
-const input: HTMLInputElement | null = document.querySelector("input");
-const inputLimitEl: HTMLSpanElement | null =
+const todoInput: HTMLInputElement | null =
+  document.querySelector("#todo-field");
+const todoInputLimitEl: HTMLSpanElement | null =
   document.querySelector(".input-limit");
 const todoBtn: HTMLButtonElement | null = document.querySelector("#todo-btn");
 const todosList: HTMLUListElement | null = document.querySelector(".todos");
@@ -16,7 +17,8 @@ let todos: Todo[] = getTodos();
 let editingTodoId: string | null = null;
 
 form?.addEventListener("submit", handleSubmit);
-input?.addEventListener("keyup", handleInputKeyDown);
+todoInput?.addEventListener("keyup", handleInputKeyDown);
+todosList?.addEventListener("click", handleTodoToggle);
 
 document.title = `${todos.length} remaining`;
 renderTodos();
@@ -24,11 +26,11 @@ renderTodos();
 function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
-  const value = input?.value.trim();
+  const value = todoInput?.value.trim();
 
   if (!value) {
     alert("empty field");
-    input?.focus();
+    todoInput?.focus();
     return;
   }
 
@@ -61,13 +63,13 @@ function handleSubmit(e: SubmitEvent) {
 
 function handleInputKeyDown(e: KeyboardEvent) {
   const titleLength = (e.target as HTMLInputElement)?.value.length;
-  if (inputLimitEl) {
-    inputLimitEl.textContent = `${titleLength}/40`;
+  if (todoInputLimitEl) {
+    todoInputLimitEl.textContent = `${titleLength}/40`;
 
     if (titleLength > 40) {
-      inputLimitEl.classList.add("error");
+      todoInputLimitEl.classList.add("error");
     } else {
-      inputLimitEl.classList.remove("error");
+      todoInputLimitEl.classList.remove("error");
     }
   }
 }
@@ -81,12 +83,30 @@ function addTodo(title: string) {
   todos = [...todos, newTodo];
 }
 
-function clearInput() {
-  if (input) {
-    input.value = "";
+function updateTodoState(id: string) {
+  todos = todos.map((todo) =>
+    todo.id === id ? { ...todo, done: !todo.done } : todo
+  );
+  renderTodos();
+  setTodos(todos);
+}
+
+function handleTodoToggle(e: MouseEvent) {
+  const target = e.target as Element;
+  if (target) {
+    const id = target?.id?.split("-")[1];
+    if (id) {
+      updateTodoState(id);
+    }
   }
-  if (inputLimitEl) {
-    inputLimitEl.textContent = `0/40`;
+}
+
+function clearInput() {
+  if (todoInput) {
+    todoInput.value = "";
+  }
+  if (todoInputLimitEl) {
+    todoInputLimitEl.textContent = `0/40`;
   }
 }
 
@@ -97,11 +117,12 @@ function editTodo(id: string) {
 
   const todo = todos.find((todo) => todo.id === id);
 
-  if (todo && input) {
+  if (todo && todoInput) {
     if (todoBtn) todoBtn.textContent = "save";
-    input.value = todo.title;
-    if (inputLimitEl) inputLimitEl.textContent = `${todo.title.length}/40`;
-    input?.focus();
+    todoInput.value = todo.title;
+    if (todoInputLimitEl)
+      todoInputLimitEl.textContent = `${todo.title.length}/40`;
+    todoInput?.focus();
     editingTodoId = id;
   } else {
     alert("algo salio mal");
@@ -119,10 +140,12 @@ function renderTodos() {
   if (todosList?.hasChildNodes()) todosList.innerHTML = "";
   document.title = `${todos.length} remaining`;
 
-  todos.forEach(({ id, title }) => {
+  todos.forEach(({ id, title, done }) => {
     const todoItem = document.createElement("li");
     todoItem.classList.add("todo");
+    todoItem.className = `todo ${done ? "completed" : ""}`;
     todoItem.textContent = title;
+    todoItem.id = `todo-${id}`;
     todosList?.appendChild(todoItem);
 
     const actionsWrapper = document.createElement("div");

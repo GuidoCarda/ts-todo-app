@@ -1,22 +1,23 @@
 "use strict";
 const form = document.querySelector("form");
-const input = document.querySelector("input");
-const inputLimitEl = document.querySelector(".input-limit");
+const todoInput = document.querySelector("#todo-field");
+const todoInputLimitEl = document.querySelector(".input-limit");
 const todoBtn = document.querySelector("#todo-btn");
 const todosList = document.querySelector(".todos");
 const TODOS_LIMIT = 5;
 let todos = getTodos();
 let editingTodoId = null;
 form === null || form === void 0 ? void 0 : form.addEventListener("submit", handleSubmit);
-input === null || input === void 0 ? void 0 : input.addEventListener("keyup", handleInputKeyDown);
+todoInput === null || todoInput === void 0 ? void 0 : todoInput.addEventListener("keyup", handleInputKeyDown);
+todosList === null || todosList === void 0 ? void 0 : todosList.addEventListener("click", handleTodoToggle);
 document.title = `${todos.length} remaining`;
 renderTodos();
 function handleSubmit(e) {
     e.preventDefault();
-    const value = input === null || input === void 0 ? void 0 : input.value.trim();
+    const value = todoInput === null || todoInput === void 0 ? void 0 : todoInput.value.trim();
     if (!value) {
         alert("empty field");
-        input === null || input === void 0 ? void 0 : input.focus();
+        todoInput === null || todoInput === void 0 ? void 0 : todoInput.focus();
         return;
     }
     if (value.length > 40) {
@@ -44,13 +45,13 @@ function handleSubmit(e) {
 function handleInputKeyDown(e) {
     var _a;
     const titleLength = (_a = e.target) === null || _a === void 0 ? void 0 : _a.value.length;
-    if (inputLimitEl) {
-        inputLimitEl.textContent = `${titleLength}/40`;
+    if (todoInputLimitEl) {
+        todoInputLimitEl.textContent = `${titleLength}/40`;
         if (titleLength > 40) {
-            inputLimitEl.classList.add("error");
+            todoInputLimitEl.classList.add("error");
         }
         else {
-            inputLimitEl.classList.remove("error");
+            todoInputLimitEl.classList.remove("error");
         }
     }
 }
@@ -62,12 +63,27 @@ function addTodo(title) {
     };
     todos = [...todos, newTodo];
 }
-function clearInput() {
-    if (input) {
-        input.value = "";
+function updateTodoState(id) {
+    todos = todos.map((todo) => todo.id === id ? Object.assign(Object.assign({}, todo), { done: !todo.done }) : todo);
+    renderTodos();
+    setTodos(todos);
+}
+function handleTodoToggle(e) {
+    var _a;
+    const target = e.target;
+    if (target) {
+        const id = (_a = target === null || target === void 0 ? void 0 : target.id) === null || _a === void 0 ? void 0 : _a.split("-")[1];
+        if (id) {
+            updateTodoState(id);
+        }
     }
-    if (inputLimitEl) {
-        inputLimitEl.textContent = `0/40`;
+}
+function clearInput() {
+    if (todoInput) {
+        todoInput.value = "";
+    }
+    if (todoInputLimitEl) {
+        todoInputLimitEl.textContent = `0/40`;
     }
 }
 function editTodo(id) {
@@ -75,13 +91,13 @@ function editTodo(id) {
         return alert("already editing a todo");
     }
     const todo = todos.find((todo) => todo.id === id);
-    if (todo && input) {
+    if (todo && todoInput) {
         if (todoBtn)
             todoBtn.textContent = "save";
-        input.value = todo.title;
-        if (inputLimitEl)
-            inputLimitEl.textContent = `${todo.title.length}/40`;
-        input === null || input === void 0 ? void 0 : input.focus();
+        todoInput.value = todo.title;
+        if (todoInputLimitEl)
+            todoInputLimitEl.textContent = `${todo.title.length}/40`;
+        todoInput === null || todoInput === void 0 ? void 0 : todoInput.focus();
         editingTodoId = id;
     }
     else {
@@ -99,10 +115,12 @@ function renderTodos() {
     if (todosList === null || todosList === void 0 ? void 0 : todosList.hasChildNodes())
         todosList.innerHTML = "";
     document.title = `${todos.length} remaining`;
-    todos.forEach(({ id, title }) => {
+    todos.forEach(({ id, title, done }) => {
         const todoItem = document.createElement("li");
         todoItem.classList.add("todo");
+        todoItem.className = `todo ${done ? "completed" : ""}`;
         todoItem.textContent = title;
+        todoItem.id = `todo-${id}`;
         todosList === null || todosList === void 0 ? void 0 : todosList.appendChild(todoItem);
         const actionsWrapper = document.createElement("div");
         const deleteBtn = createButton("delete", () => deleteTodo(id));

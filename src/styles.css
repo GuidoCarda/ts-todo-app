@@ -65,6 +65,10 @@ form button {
   gap: 1rem;
 }
 
+.todo.completed {
+  text-decoration: line-through;
+}
+
 .todo .todo-actions button + button {
   margin-left: 1rem;
 }
