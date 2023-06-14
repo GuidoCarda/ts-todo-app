@@ -129,6 +129,19 @@ function renderTodos() {
         actionsWrapper.classList.add("todo-actions");
         todoItem.appendChild(actionsWrapper);
     });
+    const hasIncompletedTodos = todos.some((todo) => !todo.done);
+    if (todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling) {
+        todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling.remove();
+    }
+    if (todos.length > 1 && hasIncompletedTodos) {
+        const button = createButton("Mark all as completed", completeAll);
+        todosList === null || todosList === void 0 ? void 0 : todosList.after(button);
+    }
+}
+function completeAll() {
+    todos = todos.map((todo) => (!todo.done ? Object.assign(Object.assign({}, todo), { done: true }) : todo));
+    renderTodos();
+    setTodos(todos);
 }
 function createButton(label, onClick) {
     const button = document.createElement("button");

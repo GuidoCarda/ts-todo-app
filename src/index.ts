@@ -158,6 +158,23 @@ function renderTodos() {
 
     todoItem.appendChild(actionsWrapper);
   });
+
+  const hasIncompletedTodos = todos.some((todo) => !todo.done);
+
+  if (todosList?.nextElementSibling) {
+    todosList?.nextElementSibling.remove();
+  }
+
+  if (todos.length > 1 && hasIncompletedTodos) {
+    const button = createButton("Mark all as completed", completeAll);
+    todosList?.after(button);
+  }
+}
+
+function completeAll() {
+  todos = todos.map((todo) => (!todo.done ? { ...todo, done: true } : todo));
+  renderTodos();
+  setTodos(todos);
 }
 
 type ButtonClickHandler = () => void;
