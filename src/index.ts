@@ -22,6 +22,7 @@ todosList?.addEventListener("click", handleTodoToggle);
 
 document.title = `${todos.length} remaining`;
 renderTodos();
+renderFilters();
 
 function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
@@ -58,6 +59,7 @@ function handleSubmit(e: SubmitEvent) {
 
   setTodos(todos);
   renderTodos();
+  renderFilters();
   clearInput();
 }
 
@@ -134,6 +136,32 @@ function deleteTodo(id: string) {
   todos = todos.filter((todo) => todo.id !== id);
   setTodos(todos);
   renderTodos();
+  renderFilters();
+}
+
+function filterTodos() {}
+
+function renderFilters() {
+  //TODO: Refactor thiiiz sheet :D
+  if (todos.length < 2) {
+    if (form?.nextElementSibling?.id === "filters") {
+      return document.querySelector("#filters")?.remove();
+    }
+  } else {
+    if (form?.nextElementSibling?.id === "filters") return;
+    const filters = ["completed", "pending", "test"];
+
+    const filtersSelect = document.createElement("select");
+    filtersSelect.id = "filters";
+    filters.forEach((filter) => {
+      const option = document.createElement("option");
+      option.textContent = filter;
+      option.value = filter;
+      filtersSelect.appendChild(option);
+    });
+
+    form?.after(filtersSelect);
+  }
 }
 
 function renderTodos() {

@@ -12,6 +12,7 @@ todoInput === null || todoInput === void 0 ? void 0 : todoInput.addEventListener
 todosList === null || todosList === void 0 ? void 0 : todosList.addEventListener("click", handleTodoToggle);
 document.title = `${todos.length} remaining`;
 renderTodos();
+renderFilters();
 function handleSubmit(e) {
     e.preventDefault();
     const value = todoInput === null || todoInput === void 0 ? void 0 : todoInput.value.trim();
@@ -40,6 +41,7 @@ function handleSubmit(e) {
     }
     setTodos(todos);
     renderTodos();
+    renderFilters();
     clearInput();
 }
 function handleInputKeyDown(e) {
@@ -110,6 +112,31 @@ function deleteTodo(id) {
     todos = todos.filter((todo) => todo.id !== id);
     setTodos(todos);
     renderTodos();
+    renderFilters();
+}
+function filterTodos() { }
+function renderFilters() {
+    var _a, _b, _c;
+    //TODO: Refactor thiiiz sheet :D
+    if (todos.length < 2) {
+        if (((_a = form === null || form === void 0 ? void 0 : form.nextElementSibling) === null || _a === void 0 ? void 0 : _a.id) === "filters") {
+            return (_b = document.querySelector("#filters")) === null || _b === void 0 ? void 0 : _b.remove();
+        }
+    }
+    else {
+        if (((_c = form === null || form === void 0 ? void 0 : form.nextElementSibling) === null || _c === void 0 ? void 0 : _c.id) === "filters")
+            return;
+        const filters = ["completed", "pending", "test"];
+        const filtersSelect = document.createElement("select");
+        filtersSelect.id = "filters";
+        filters.forEach((filter) => {
+            const option = document.createElement("option");
+            option.textContent = filter;
+            option.value = filter;
+            filtersSelect.appendChild(option);
+        });
+        form === null || form === void 0 ? void 0 : form.after(filtersSelect);
+    }
 }
 function renderTodos() {
     if (todosList === null || todosList === void 0 ? void 0 : todosList.hasChildNodes())
