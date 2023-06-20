@@ -5,11 +5,14 @@ const todoInputLimitEl: HTMLSpanElement | null =
   document.querySelector(".input-limit");
 const todoBtn: HTMLButtonElement | null = document.querySelector("#todo-btn");
 const todosList: HTMLUListElement | null = document.querySelector(".todos");
+const filterContainer: HTMLDivElement | null =
+  document.querySelector(".filter-container");
 
 type Todo = {
   id: string;
   title: string;
   done: boolean;
+  createdAt: Date | string;
 };
 
 const TODOS_LIMIT = 5;
@@ -21,7 +24,7 @@ todoInput?.addEventListener("keyup", handleInputKeyDown);
 todosList?.addEventListener("click", handleTodoToggle);
 
 document.title = `${todos.length} remaining`;
-renderTodos();
+renderTodos(todos);
 renderFilters();
 
 function handleSubmit(e: SubmitEvent) {
@@ -58,9 +61,10 @@ function handleSubmit(e: SubmitEvent) {
   }
 
   setTodos(todos);
-  renderTodos();
+  renderTodos(todos);
   renderFilters();
   clearInput();
+  console.log(todos);
 }
 
 function handleInputKeyDown(e: KeyboardEvent) {
@@ -81,6 +85,7 @@ function addTodo(title: string) {
     id: getRandomId(),
     title,
     done: false,
+    createdAt: new Date(),
   };
   todos = [...todos, newTodo];
 }
@@ -89,7 +94,7 @@ function updateTodoState(id: string) {
   todos = todos.map((todo) =>
     todo.id === id ? { ...todo, done: !todo.done } : todo
   );
-  renderTodos();
+  renderTodos(todos);
   setTodos(todos);
 }
 
@@ -135,21 +140,39 @@ function deleteTodo(id: string) {
   if (editingTodoId) return alert("you can delete todos while editing one");
   todos = todos.filter((todo) => todo.id !== id);
   setTodos(todos);
-  renderTodos();
+  renderTodos(todos);
   renderFilters();
 }
 
-function filterTodos() {}
+function handleFilterChange(e: Event) {
+  const selectedFilter = (e.target as HTMLSelectElement)?.value;
+
+  console.log(selectedFilter);
+  if (selectedFilter) {
+    let filteredTodos = filterTodos(selectedFilter);
+    console.log(filteredTodos);
+    renderTodos(filteredTodos);
+  }
+}
+
+function filterTodos(criteria: string): Todo[] {
+  if (criteria === "completed") {
+    return todos.filter((todo) => todo.done);
+  } else if (criteria === "pending") {
+    return todos.filter((todo) => !todo.done);
+  }
+  return todos;
+}
 
 function renderFilters() {
   //TODO: Refactor thiiiz sheet :D
   if (todos.length < 2) {
-    if (form?.nextElementSibling?.id === "filters") {
+    if (filterContainer?.hasChildNodes()) {
       return document.querySelector("#filters")?.remove();
     }
   } else {
-    if (form?.nextElementSibling?.id === "filters") return;
-    const filters = ["completed", "pending", "test"];
+    if (filterContainer?.hasChildNodes()) return;
+    const filters = ["all", "completed", "pending"];
 
     const filtersSelect = document.createElement("select");
     filtersSelect.id = "filters";
@@ -160,21 +183,90 @@ function renderFilters() {
       filtersSelect.appendChild(option);
     });
 
-    form?.after(filtersSelect);
+    filtersSelect.addEventListener("change", handleFilterChange);
+
+    filterContainer?.appendChild(filtersSelect);
   }
 }
 
-function renderTodos() {
+function renderTodos(filteredTodos: Todo[]) {
   if (todosList?.hasChildNodes()) todosList.innerHTML = "";
   document.title = `${todos.length} remaining`;
 
-  todos.forEach(({ id, title, done }) => {
+  filteredTodos.forEach(({ id, title, done, createdAt }) => {
     const todoItem = document.createElement("li");
     todoItem.classList.add("todo");
     todoItem.className = `todo ${done ? "completed" : ""}`;
     todoItem.textContent = title;
     todoItem.id = `todo-${id}`;
+    todoItem.draggable = true;
     todosList?.appendChild(todoItem);
+
+    todoItem.addEventListener("dragstart", (e) => {
+      (e?.currentTarget as HTMLElement).classList.add("dragging");
+      e.dataTransfer?.clearData();
+      e.dataTransfer?.setData("text/plain", todoItem.id);
+    });
+
+    todoItem.addEventListener("dragend", (e) => {
+      (e.currentTarget as HTMLElement).classList.remove("dragging");
+    });
+
+    //needed to allow the drop event to occurr and be listened
+    todoItem.addEventListener("dragover", (e) => {
+      // console.log("dragover");
+      e.preventDefault();
+    });
+
+    // todosList?.addEventListener("dragover", handleSortableTodos);
+
+    // todoItem.addEventListener("drop", (e) => {
+    //   console.log("drop");
+    //   e.preventDefault();
+
+    //   const data = e.dataTransfer?.getData("text") || "";
+    //   const source = document.getElementById(data);
+    //   //@ts-ignore
+    //   if (e.target.classList.contains("todo")) {
+    //     console.log("entro");
+    //     //@ts-ignore
+    //     e?.target?.after(source);
+    //   } else {
+    //     //@ts-ignore
+    //     e?.target?.parentNode?.after(source);
+    //   }
+    // });
+
+    todoItem.addEventListener("drop", (e) => {
+      console.log("drop");
+      // e.preventDefault();
+
+      const data = e.dataTransfer?.getData("text") || "";
+      const draggedItem = document.getElementById(data) as HTMLElement;
+
+      const siblings = [
+        ...(todosList?.querySelectorAll(".todo:not(.dragging)") || []),
+      ];
+
+      let nextSibling = siblings.find((sibling) => {
+        const siblingElemement = sibling as HTMLElement;
+        return (
+          e.clientY <=
+          siblingElemement.offsetTop + siblingElemement.offsetHeight / 2
+        );
+      }) as Element;
+
+      todos = sortTodos(
+        draggedItem.id.split("-")[1],
+        nextSibling?.id.split("-")[1]
+      );
+      setTodos(todos);
+
+      todosList?.insertBefore(draggedItem, nextSibling);
+    });
+
+    const creationDateSpan = document.createElement("span");
+    creationDateSpan.textContent = getFormattedDate(createdAt);
 
     const actionsWrapper = document.createElement("div");
 
@@ -184,24 +276,80 @@ function renderTodos() {
     actionsWrapper.append(editBtn, deleteBtn);
     actionsWrapper.classList.add("todo-actions");
 
+    todoItem.append(creationDateSpan);
     todoItem.appendChild(actionsWrapper);
   });
 
-  const hasIncompletedTodos = todos.some((todo) => !todo.done);
+  const hasIncompletedTodos = filteredTodos.some((todo) => !todo.done);
 
   if (todosList?.nextElementSibling) {
     todosList?.nextElementSibling.remove();
   }
 
-  if (todos.length > 1 && hasIncompletedTodos) {
+  if (filteredTodos.length > 1 && hasIncompletedTodos) {
     const button = createButton("Mark all as completed", completeAll);
+    button.classList.add("complete-all-btn");
     todosList?.after(button);
   }
 }
 
+//TODO: is there any better way to implement this?
+function sortTodos(draggedTodoId: string, nextId: string | undefined) {
+  let todosCopy = [...todos];
+
+  const draggedTodoIndex = todos.findIndex((todo) => todo.id === draggedTodoId);
+  const [draggedTodo] = todosCopy.splice(draggedTodoIndex, 1);
+
+  if (!nextId) {
+    //this means that it was dragged to the end
+    todosCopy = [...todosCopy, draggedTodo];
+  } else {
+    const nextTodoIndex = todosCopy.findIndex((todo) => todo.id === nextId);
+
+    todosCopy = [
+      ...todosCopy.splice(0, nextTodoIndex - 1),
+      draggedTodo,
+      ...todosCopy.splice(0),
+    ];
+  }
+
+  return todosCopy;
+}
+
+function handleSortableTodos(e: DragEvent) {
+  e.preventDefault();
+
+  const draggingItem = document.querySelector(".dragging") as HTMLElement;
+
+  console.log(draggingItem.id.split("-")[1]);
+
+  const siblings = [
+    ...(todosList?.querySelectorAll(".todo:not(.dragging)") || []),
+  ];
+
+  let nextSibling = siblings.find((sibling) => {
+    const siblingElemement = sibling as HTMLElement;
+    return (
+      e.clientY <=
+      siblingElemement.offsetTop + siblingElemement.offsetHeight / 2
+    );
+  }) as Element;
+
+  todosList?.insertBefore(draggingItem, nextSibling);
+}
+
+function getFormattedDate(date: Date | string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    day: "2-digit",
+    year: "numeric",
+    month: "long",
+    weekday: "short",
+  });
+}
+
 function completeAll() {
   todos = todos.map((todo) => (!todo.done ? { ...todo, done: true } : todo));
-  renderTodos();
+  renderTodos(todos);
   setTodos(todos);
 }
 
@@ -238,3 +386,5 @@ function getTodos(): Todo[] {
 function setTodos(value: Todo[]) {
   localStorage.setItem("todos", JSON.stringify(value));
 }
+
+// Drag and drop feature

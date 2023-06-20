@@ -4,6 +4,7 @@ const todoInput = document.querySelector("#todo-field");
 const todoInputLimitEl = document.querySelector(".input-limit");
 const todoBtn = document.querySelector("#todo-btn");
 const todosList = document.querySelector(".todos");
+const filterContainer = document.querySelector(".filter-container");
 const TODOS_LIMIT = 5;
 let todos = getTodos();
 let editingTodoId = null;
@@ -11,7 +12,7 @@ form === null || form === void 0 ? void 0 : form.addEventListener("submit", hand
 todoInput === null || todoInput === void 0 ? void 0 : todoInput.addEventListener("keyup", handleInputKeyDown);
 todosList === null || todosList === void 0 ? void 0 : todosList.addEventListener("click", handleTodoToggle);
 document.title = `${todos.length} remaining`;
-renderTodos();
+renderTodos(todos);
 renderFilters();
 function handleSubmit(e) {
     e.preventDefault();
@@ -40,9 +41,10 @@ function handleSubmit(e) {
         addTodo(value);
     }
     setTodos(todos);
-    renderTodos();
+    renderTodos(todos);
     renderFilters();
     clearInput();
+    console.log(todos);
 }
 function handleInputKeyDown(e) {
     var _a;
@@ -62,12 +64,13 @@ function addTodo(title) {
         id: getRandomId(),
         title,
         done: false,
+        createdAt: new Date(),
     };
     todos = [...todos, newTodo];
 }
 function updateTodoState(id) {
     todos = todos.map((todo) => todo.id === id ? Object.assign(Object.assign({}, todo), { done: !todo.done }) : todo);
-    renderTodos();
+    renderTodos(todos);
     setTodos(todos);
 }
 function handleTodoToggle(e) {
@@ -111,22 +114,40 @@ function deleteTodo(id) {
         return alert("you can delete todos while editing one");
     todos = todos.filter((todo) => todo.id !== id);
     setTodos(todos);
-    renderTodos();
+    renderTodos(todos);
     renderFilters();
 }
-function filterTodos() { }
+function handleFilterChange(e) {
+    var _a;
+    const selectedFilter = (_a = e.target) === null || _a === void 0 ? void 0 : _a.value;
+    console.log(selectedFilter);
+    if (selectedFilter) {
+        let filteredTodos = filterTodos(selectedFilter);
+        console.log(filteredTodos);
+        renderTodos(filteredTodos);
+    }
+}
+function filterTodos(criteria) {
+    if (criteria === "completed") {
+        return todos.filter((todo) => todo.done);
+    }
+    else if (criteria === "pending") {
+        return todos.filter((todo) => !todo.done);
+    }
+    return todos;
+}
 function renderFilters() {
-    var _a, _b, _c;
+    var _a;
     //TODO: Refactor thiiiz sheet :D
     if (todos.length < 2) {
-        if (((_a = form === null || form === void 0 ? void 0 : form.nextElementSibling) === null || _a === void 0 ? void 0 : _a.id) === "filters") {
-            return (_b = document.querySelector("#filters")) === null || _b === void 0 ? void 0 : _b.remove();
+        if (filterContainer === null || filterContainer === void 0 ? void 0 : filterContainer.hasChildNodes()) {
+            return (_a = document.querySelector("#filters")) === null || _a === void 0 ? void 0 : _a.remove();
         }
     }
     else {
-        if (((_c = form === null || form === void 0 ? void 0 : form.nextElementSibling) === null || _c === void 0 ? void 0 : _c.id) === "filters")
+        if (filterContainer === null || filterContainer === void 0 ? void 0 : filterContainer.hasChildNodes())
             return;
-        const filters = ["completed", "pending", "test"];
+        const filters = ["all", "completed", "pending"];
         const filtersSelect = document.createElement("select");
         filtersSelect.id = "filters";
         filters.forEach((filter) => {
@@ -135,39 +156,134 @@ function renderFilters() {
             option.value = filter;
             filtersSelect.appendChild(option);
         });
-        form === null || form === void 0 ? void 0 : form.after(filtersSelect);
+        filtersSelect.addEventListener("change", handleFilterChange);
+        filterContainer === null || filterContainer === void 0 ? void 0 : filterContainer.appendChild(filtersSelect);
     }
 }
-function renderTodos() {
+function renderTodos(filteredTodos) {
     if (todosList === null || todosList === void 0 ? void 0 : todosList.hasChildNodes())
         todosList.innerHTML = "";
     document.title = `${todos.length} remaining`;
-    todos.forEach(({ id, title, done }) => {
+    filteredTodos.forEach(({ id, title, done, createdAt }) => {
         const todoItem = document.createElement("li");
         todoItem.classList.add("todo");
         todoItem.className = `todo ${done ? "completed" : ""}`;
         todoItem.textContent = title;
         todoItem.id = `todo-${id}`;
+        todoItem.draggable = true;
         todosList === null || todosList === void 0 ? void 0 : todosList.appendChild(todoItem);
+        todoItem.addEventListener("dragstart", (e) => {
+            var _a, _b;
+            (e === null || e === void 0 ? void 0 : e.currentTarget).classList.add("dragging");
+            (_a = e.dataTransfer) === null || _a === void 0 ? void 0 : _a.clearData();
+            (_b = e.dataTransfer) === null || _b === void 0 ? void 0 : _b.setData("text/plain", todoItem.id);
+        });
+        todoItem.addEventListener("dragend", (e) => {
+            e.currentTarget.classList.remove("dragging");
+        });
+        //needed to allow the drop event to occurr and be listened
+        todoItem.addEventListener("dragover", (e) => {
+            // console.log("dragover");
+            e.preventDefault();
+        });
+        // todosList?.addEventListener("dragover", handleSortableTodos);
+        // todoItem.addEventListener("drop", (e) => {
+        //   console.log("drop");
+        //   e.preventDefault();
+        //   const data = e.dataTransfer?.getData("text") || "";
+        //   const source = document.getElementById(data);
+        //   //@ts-ignore
+        //   if (e.target.classList.contains("todo")) {
+        //     console.log("entro");
+        //     //@ts-ignore
+        //     e?.target?.after(source);
+        //   } else {
+        //     //@ts-ignore
+        //     e?.target?.parentNode?.after(source);
+        //   }
+        // });
+        todoItem.addEventListener("drop", (e) => {
+            var _a;
+            console.log("drop");
+            // e.preventDefault();
+            const data = ((_a = e.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text")) || "";
+            const draggedItem = document.getElementById(data);
+            const siblings = [
+                ...((todosList === null || todosList === void 0 ? void 0 : todosList.querySelectorAll(".todo:not(.dragging)")) || []),
+            ];
+            let nextSibling = siblings.find((sibling) => {
+                const siblingElemement = sibling;
+                return (e.clientY <=
+                    siblingElemement.offsetTop + siblingElemement.offsetHeight / 2);
+            });
+            todos = sortTodos(draggedItem.id.split("-")[1], nextSibling === null || nextSibling === void 0 ? void 0 : nextSibling.id.split("-")[1]);
+            setTodos(todos);
+            todosList === null || todosList === void 0 ? void 0 : todosList.insertBefore(draggedItem, nextSibling);
+        });
+        const creationDateSpan = document.createElement("span");
+        creationDateSpan.textContent = getFormattedDate(createdAt);
         const actionsWrapper = document.createElement("div");
         const deleteBtn = createButton("delete", () => deleteTodo(id));
         const editBtn = createButton("edit", () => editTodo(id));
         actionsWrapper.append(editBtn, deleteBtn);
         actionsWrapper.classList.add("todo-actions");
+        todoItem.append(creationDateSpan);
         todoItem.appendChild(actionsWrapper);
     });
-    const hasIncompletedTodos = todos.some((todo) => !todo.done);
+    const hasIncompletedTodos = filteredTodos.some((todo) => !todo.done);
     if (todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling) {
         todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling.remove();
     }
-    if (todos.length > 1 && hasIncompletedTodos) {
+    if (filteredTodos.length > 1 && hasIncompletedTodos) {
         const button = createButton("Mark all as completed", completeAll);
+        button.classList.add("complete-all-btn");
         todosList === null || todosList === void 0 ? void 0 : todosList.after(button);
     }
 }
+//TODO: is there any better way to implement this?
+function sortTodos(draggedTodoId, nextId) {
+    let todosCopy = [...todos];
+    const draggedTodoIndex = todos.findIndex((todo) => todo.id === draggedTodoId);
+    const [draggedTodo] = todosCopy.splice(draggedTodoIndex, 1);
+    if (!nextId) {
+        //this means that it was dragged to the end
+        todosCopy = [...todosCopy, draggedTodo];
+    }
+    else {
+        const nextTodoIndex = todosCopy.findIndex((todo) => todo.id === nextId);
+        todosCopy = [
+            ...todosCopy.splice(0, nextTodoIndex - 1),
+            draggedTodo,
+            ...todosCopy.splice(0),
+        ];
+    }
+    return todosCopy;
+}
+function handleSortableTodos(e) {
+    e.preventDefault();
+    const draggingItem = document.querySelector(".dragging");
+    console.log(draggingItem.id.split("-")[1]);
+    const siblings = [
+        ...((todosList === null || todosList === void 0 ? void 0 : todosList.querySelectorAll(".todo:not(.dragging)")) || []),
+    ];
+    let nextSibling = siblings.find((sibling) => {
+        const siblingElemement = sibling;
+        return (e.clientY <=
+            siblingElemement.offsetTop + siblingElemement.offsetHeight / 2);
+    });
+    todosList === null || todosList === void 0 ? void 0 : todosList.insertBefore(draggingItem, nextSibling);
+}
+function getFormattedDate(date) {
+    return new Date(date).toLocaleDateString("en-US", {
+        day: "2-digit",
+        year: "numeric",
+        month: "long",
+        weekday: "short",
+    });
+}
 function completeAll() {
     todos = todos.map((todo) => (!todo.done ? Object.assign(Object.assign({}, todo), { done: true }) : todo));
-    renderTodos();
+    renderTodos(todos);
     setTodos(todos);
 }
 function createButton(label, onClick) {
@@ -197,4 +313,5 @@ function getTodos() {
 function setTodos(value) {
     localStorage.setItem("todos", JSON.stringify(value));
 }
+// Drag and drop feature
 //# sourceMappingURL=index.js.map
