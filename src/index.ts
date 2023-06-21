@@ -8,6 +8,8 @@ const todosList: HTMLUListElement | null = document.querySelector(".todos");
 const filterContainer: HTMLDivElement | null =
   document.querySelector(".filter-container");
 
+const todosActionsEl = document.querySelector(".todos-actions");
+
 type Todo = {
   id: string;
   title: string;
@@ -203,6 +205,9 @@ function renderTodos(filteredTodos: Todo[]) {
     todosList?.appendChild(todoItem);
 
     todoItem.addEventListener("dragstart", (e) => {
+      if (editingTodoId) {
+        return alert("sorting while editing is not posible");
+      }
       (e?.currentTarget as HTMLElement).classList.add("dragging");
       e.dataTransfer?.clearData();
       e.dataTransfer?.setData("text/plain", todoItem.id);
@@ -214,32 +219,11 @@ function renderTodos(filteredTodos: Todo[]) {
 
     //needed to allow the drop event to occurr and be listened
     todoItem.addEventListener("dragover", (e) => {
-      // console.log("dragover");
       e.preventDefault();
     });
 
-    // todosList?.addEventListener("dragover", handleSortableTodos);
-
-    // todoItem.addEventListener("drop", (e) => {
-    //   console.log("drop");
-    //   e.preventDefault();
-
-    //   const data = e.dataTransfer?.getData("text") || "";
-    //   const source = document.getElementById(data);
-    //   //@ts-ignore
-    //   if (e.target.classList.contains("todo")) {
-    //     console.log("entro");
-    //     //@ts-ignore
-    //     e?.target?.after(source);
-    //   } else {
-    //     //@ts-ignore
-    //     e?.target?.parentNode?.after(source);
-    //   }
-    // });
-
     todoItem.addEventListener("drop", (e) => {
       console.log("drop");
-      // e.preventDefault();
 
       const data = e.dataTransfer?.getData("text") || "";
       const draggedItem = document.getElementById(data) as HTMLElement;
@@ -261,7 +245,6 @@ function renderTodos(filteredTodos: Todo[]) {
         nextSibling?.id.split("-")[1]
       );
       setTodos(todos);
-
       todosList?.insertBefore(draggedItem, nextSibling);
     });
 
@@ -282,18 +265,24 @@ function renderTodos(filteredTodos: Todo[]) {
 
   const hasIncompletedTodos = filteredTodos.some((todo) => !todo.done);
 
-  if (todosList?.nextElementSibling) {
-    todosList?.nextElementSibling.remove();
+  if (todosActionsEl?.hasChildNodes()) {
+    todosActionsEl.innerHTML = "";
   }
 
   if (filteredTodos.length > 1 && hasIncompletedTodos) {
     const button = createButton("Mark all as completed", completeAll);
     button.classList.add("complete-all-btn");
-    todosList?.after(button);
+    todosActionsEl?.append(button);
+  }
+
+  if (todos.some((todo) => todo.done)) {
+    const button = createButton("Clear all completed", clearCompletedTodos);
+    button.classList.add("remove-completed-btn");
+    todosActionsEl?.append(button);
   }
 }
 
-//TODO: is there any better way to implement this?
+// TODO: is there any better way to implement this?
 function sortTodos(draggedTodoId: string, nextId: string | undefined) {
   let todosCopy = [...todos];
 
@@ -318,10 +307,7 @@ function sortTodos(draggedTodoId: string, nextId: string | undefined) {
 
 function handleSortableTodos(e: DragEvent) {
   e.preventDefault();
-
   const draggingItem = document.querySelector(".dragging") as HTMLElement;
-
-  console.log(draggingItem.id.split("-")[1]);
 
   const siblings = [
     ...(todosList?.querySelectorAll(".todo:not(.dragging)") || []),
@@ -353,6 +339,12 @@ function completeAll() {
   setTodos(todos);
 }
 
+function clearCompletedTodos() {
+  todos = todos.filter((todo) => !todo.done);
+  renderTodos(todos);
+  setTodos(todos);
+}
+
 type ButtonClickHandler = () => void;
 
 function createButton(label: string, onClick: ButtonClickHandler) {
@@ -361,16 +353,6 @@ function createButton(label: string, onClick: ButtonClickHandler) {
   button.addEventListener("click", onClick);
   return button;
 }
-
-// function createButton<T extends (...args: any[]) => void>(
-//   label: string,
-//   onClick: T
-// ): HTMLButtonElement {
-//   const button = document.createElement("button");
-//   button.textContent = label;
-//   button.addEventListener("click", onClick);
-//   return button;
-// }
 
 function getRandomId(length: number = 10): string {
   return Math.random()

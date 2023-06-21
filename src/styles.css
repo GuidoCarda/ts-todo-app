@@ -30,11 +30,14 @@ button {
 .todo {
   display: flex;
   align-items: center;
+  border: 1px solid rgb(132, 132, 132);
+  padding: 1rem;
+  border-radius: 0.3rem;
   justify-content: space-between;
 }
 
 .dragging {
-  background: grey;
+  background: rgb(42, 42, 42);
   opacity: 0.5;
 }
 
@@ -75,8 +78,17 @@ select {
   gap: 1rem;
 }
 
+.todo {
+  transition: all 250ms;
+}
+
 .todo.completed {
   text-decoration: line-through;
+}
+
+.todo:hover {
+  background: #151515;
+  border-color: white;
 }
 
 .todo .todo-actions button + button {
@@ -110,8 +122,19 @@ select {
   justify-content: end;
 }
 
-.complete-all-btn {
+.todos-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.complete-all-btn,
+.remove-completed-btn {
   margin-top: 1rem;
   height: 2.5rem;
   padding-inline: 1rem;
+}
+
+.remove-completed-btn {
+  margin-left: auto;
 }

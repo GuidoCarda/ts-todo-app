@@ -5,6 +5,7 @@ const todoInputLimitEl = document.querySelector(".input-limit");
 const todoBtn = document.querySelector("#todo-btn");
 const todosList = document.querySelector(".todos");
 const filterContainer = document.querySelector(".filter-container");
+const todosActionsEl = document.querySelector(".todos-actions");
 const TODOS_LIMIT = 5;
 let todos = getTodos();
 let editingTodoId = null;
@@ -174,6 +175,9 @@ function renderTodos(filteredTodos) {
         todosList === null || todosList === void 0 ? void 0 : todosList.appendChild(todoItem);
         todoItem.addEventListener("dragstart", (e) => {
             var _a, _b;
+            if (editingTodoId) {
+                return alert("sorting while editing is not posible");
+            }
             (e === null || e === void 0 ? void 0 : e.currentTarget).classList.add("dragging");
             (_a = e.dataTransfer) === null || _a === void 0 ? void 0 : _a.clearData();
             (_b = e.dataTransfer) === null || _b === void 0 ? void 0 : _b.setData("text/plain", todoItem.id);
@@ -183,29 +187,11 @@ function renderTodos(filteredTodos) {
         });
         //needed to allow the drop event to occurr and be listened
         todoItem.addEventListener("dragover", (e) => {
-            // console.log("dragover");
             e.preventDefault();
         });
-        // todosList?.addEventListener("dragover", handleSortableTodos);
-        // todoItem.addEventListener("drop", (e) => {
-        //   console.log("drop");
-        //   e.preventDefault();
-        //   const data = e.dataTransfer?.getData("text") || "";
-        //   const source = document.getElementById(data);
-        //   //@ts-ignore
-        //   if (e.target.classList.contains("todo")) {
-        //     console.log("entro");
-        //     //@ts-ignore
-        //     e?.target?.after(source);
-        //   } else {
-        //     //@ts-ignore
-        //     e?.target?.parentNode?.after(source);
-        //   }
-        // });
         todoItem.addEventListener("drop", (e) => {
             var _a;
             console.log("drop");
-            // e.preventDefault();
             const data = ((_a = e.dataTransfer) === null || _a === void 0 ? void 0 : _a.getData("text")) || "";
             const draggedItem = document.getElementById(data);
             const siblings = [
@@ -231,16 +217,21 @@ function renderTodos(filteredTodos) {
         todoItem.appendChild(actionsWrapper);
     });
     const hasIncompletedTodos = filteredTodos.some((todo) => !todo.done);
-    if (todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling) {
-        todosList === null || todosList === void 0 ? void 0 : todosList.nextElementSibling.remove();
+    if (todosActionsEl === null || todosActionsEl === void 0 ? void 0 : todosActionsEl.hasChildNodes()) {
+        todosActionsEl.innerHTML = "";
     }
     if (filteredTodos.length > 1 && hasIncompletedTodos) {
         const button = createButton("Mark all as completed", completeAll);
         button.classList.add("complete-all-btn");
-        todosList === null || todosList === void 0 ? void 0 : todosList.after(button);
+        todosActionsEl === null || todosActionsEl === void 0 ? void 0 : todosActionsEl.append(button);
+    }
+    if (todos.some((todo) => todo.done)) {
+        const button = createButton("Clear all completed", clearCompletedTodos);
+        button.classList.add("remove-completed-btn");
+        todosActionsEl === null || todosActionsEl === void 0 ? void 0 : todosActionsEl.append(button);
     }
 }
-//TODO: is there any better way to implement this?
+// TODO: is there any better way to implement this?
 function sortTodos(draggedTodoId, nextId) {
     let todosCopy = [...todos];
     const draggedTodoIndex = todos.findIndex((todo) => todo.id === draggedTodoId);
@@ -262,7 +253,6 @@ function sortTodos(draggedTodoId, nextId) {
 function handleSortableTodos(e) {
     e.preventDefault();
     const draggingItem = document.querySelector(".dragging");
-    console.log(draggingItem.id.split("-")[1]);
     const siblings = [
         ...((todosList === null || todosList === void 0 ? void 0 : todosList.querySelectorAll(".todo:not(.dragging)")) || []),
     ];
@@ -286,21 +276,17 @@ function completeAll() {
     renderTodos(todos);
     setTodos(todos);
 }
+function clearCompletedTodos() {
+    todos = todos.filter((todo) => !todo.done);
+    renderTodos(todos);
+    setTodos(todos);
+}
 function createButton(label, onClick) {
     const button = document.createElement("button");
     button.textContent = label;
     button.addEventListener("click", onClick);
     return button;
 }
-// function createButton<T extends (...args: any[]) => void>(
-//   label: string,
-//   onClick: T
-// ): HTMLButtonElement {
-//   const button = document.createElement("button");
-//   button.textContent = label;
-//   button.addEventListener("click", onClick);
-//   return button;
-// }
 function getRandomId(length = 10) {
     return Math.random()
         .toString(36)
